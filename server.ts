@@ -3,14 +3,16 @@ import { registerOperations } from './operations';
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
+
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import webpush from "web-push";
 
 dotenv.config();
 if(process.argv.includes("--production"))process.env.NODE_ENV="production";
-const runtimeDir=path.resolve(process.env.AIN_RUNTIME_DIR || (process.env.VERCEL ? "/tmp/.local-runtime" : ".local-runtime"));fs.mkdirSync(runtimeDir,{recursive:true});
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const runtimeDir = path.resolve(process.env.AIN_RUNTIME_DIR || (isServerless ? "/tmp/.local-runtime" : ".local-runtime"));
+try { fs.mkdirSync(runtimeDir, { recursive: true }); } catch (e) {}
 
 // VAPID keys setup for Web Push Notifications
 let vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "";
@@ -20,7 +22,7 @@ if (!vapidPublicKey || !vapidPrivateKey) {
   try {
     const keyFile=path.join(runtimeDir,"vapid.json");
     const generated = fs.existsSync(keyFile)?JSON.parse(fs.readFileSync(keyFile,"utf8")):webpush.generateVAPIDKeys();
-    if(!fs.existsSync(keyFile))fs.writeFileSync(keyFile,JSON.stringify(generated));
+    try { if(!fs.existsSync(keyFile))fs.writeFileSync(keyFile,JSON.stringify(generated)); } catch(e) {}
     vapidPublicKey = generated.publicKey;
     vapidPrivateKey = generated.privateKey;
   } catch (err) {
@@ -48,7 +50,11 @@ interface PushSubscriptionItem {
   subscribedAt: string;
 }
 
-let pushSubscriptions: PushSubscriptionItem[] = fs.existsSync(path.join(runtimeDir,"subscriptions.json"))?JSON.parse(fs.readFileSync(path.join(runtimeDir,"subscriptions.json"),"utf8")):[];
+let pushSubscriptions: PushSubscriptionItem[] = [];
+try {
+  const p = path.join(runtimeDir, "subscriptions.json");
+  if (fs.existsSync(p)) pushSubscriptions = JSON.parse(fs.readFileSync(p, "utf8"));
+} catch (e) {}
 
 interface PushLogItem {
   id: string;
@@ -62,8 +68,17 @@ interface PushLogItem {
   failureCount: number;
 }
 
-let pushNotificationLogs: PushLogItem[] = fs.existsSync(path.join(runtimeDir,"push-logs.json"))?JSON.parse(fs.readFileSync(path.join(runtimeDir,"push-logs.json"),"utf8")):[];
-function persistPush(){fs.writeFileSync(path.join(runtimeDir,"subscriptions.json"),JSON.stringify(pushSubscriptions));fs.writeFileSync(path.join(runtimeDir,"push-logs.json"),JSON.stringify(pushNotificationLogs));}
+let pushNotificationLogs: PushLogItem[] = [];
+try {
+  const p = path.join(runtimeDir, "push-logs.json");
+  if (fs.existsSync(p)) pushNotificationLogs = JSON.parse(fs.readFileSync(p, "utf8"));
+} catch (e) {}
+function persistPush() {
+  try {
+    fs.writeFileSync(path.join(runtimeDir, "subscriptions.json"), JSON.stringify(pushSubscriptions));
+    fs.writeFileSync(path.join(runtimeDir, "push-logs.json"), JSON.stringify(pushNotificationLogs));
+  } catch (e) {}
+}
 
 async function broadcastPushNotification(payload: {
   title: string;
@@ -405,8 +420,14 @@ app.post("/api/manar/ask", async (req, res) => {
   }
 });
 
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('[Server Error]', err);
+  res.status(err.status || 500).json({ error: err.message || 'خطأ غير متوقع في الخادم' });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

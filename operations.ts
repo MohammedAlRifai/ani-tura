@@ -158,15 +158,18 @@ export function applyOperation(s: State, type: string, p: any, actor: Actor): an
 }
 
 export function registerOperations(app: Express, notify?: (payload:any)=>Promise<any>) {
-  const dir=path.resolve(process.env.AIN_RUNTIME_DIR || (process.env.VERCEL ? '/tmp/.local-runtime' : '.local-runtime'));fs.mkdirSync(dir,{recursive:true});const filename=path.join(dir,'state.json');
-  let state:State=fs.existsSync(filename)?JSON.parse(fs.readFileSync(filename,'utf8')):freshState();
-  const persist=(next:State)=>{const tmp=filename+'.tmp';fs.writeFileSync(tmp,JSON.stringify(next));fs.renameSync(tmp,filename);state=next;};if(!fs.existsSync(filename))persist(state);
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+  const dir = path.resolve(process.env.AIN_RUNTIME_DIR || (isServerless ? '/tmp/.local-runtime' : '.local-runtime'));
+  try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
+  const filename = path.join(dir, 'state.json');
+  let state: State; try { state = fs.existsSync(filename) ? JSON.parse(fs.readFileSync(filename, 'utf8')) : freshState(); } catch (e) { state = freshState(); }
+  const persist=(next:State)=>{try{const tmp=filename+'.tmp';fs.writeFileSync(tmp,JSON.stringify(next));fs.renameSync(tmp,filename);}catch(e){}state=next;};try{if(!fs.existsSync(filename))persist(state);}catch(e){}
   const credentials=path.join(dir,'accounts.json');let accounts:any[];
   const defaultPass=process.env.APP_PASSWORD||process.env.DEFAULT_PASSWORD||'123456';
-  if(fs.existsSync(credentials))accounts=JSON.parse(fs.readFileSync(credentials,'utf8'));else{const access:string[]=['بيانات دخول محلية مؤقتة — لا تشارك هذا الملف ولا تضمه لحزمة المشروع.'];accounts=seed.initialUsers.map(user=>{const password=defaultPass;const salt=randomBytes(16).toString('hex');access.push(`${user.id}\n${user.name}\nكلمة المرور: ${password}\n`);return {id:user.id,salt,hash:scryptSync(password,salt,64).toString('hex')};});fs.writeFileSync(credentials,JSON.stringify(accounts));fs.writeFileSync(path.join(dir,'access.txt'),access.join('\n'));}
+  if(fs.existsSync(credentials)){try{accounts=JSON.parse(fs.readFileSync(credentials,'utf8'));}catch(e){}}if(!accounts||!accounts.length){const access:string[]=['بيانات دخول محلية مؤقتة — لا تشارك هذا الملف ولا تضمه لحزمة المشروع.'];accounts=seed.initialUsers.map(user=>{const password=defaultPass;const salt=randomBytes(16).toString('hex');access.push(`${user.id}\n${user.name}\nكلمة المرور: ${password}\n`);return {id:user.id,salt,hash:scryptSync(password,salt,64).toString('hex')};});try{fs.writeFileSync(credentials,JSON.stringify(accounts));fs.writeFileSync(path.join(dir,'access.txt'),access.join('\n'));}catch(e){}}
   const sessions=new Map<string,{userId:string;expires:number}>();const attempts=new Map<string,{count:number;until:number}>();
   const userFor=(req:Request)=>{const token=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith('ain_session='))?.split('=')[1];const sess=token&&sessions.get(token);return sess&&sess.expires>Date.now()?seed.initialUsers.find(x=>x.id===sess.userId):undefined;};
-  app.post('/api/auth/login',(req,res)=>{
+  app.post(['/api/auth/login', '/auth/login'],(req,res)=>{
     const key=req.ip||'local';
     const limit=attempts.get(key);
     if(limit&&limit.until>Date.now()&&limit.count>=8)return res.status(429).json({error:'محاولات كثيرة؛ انتظر 15 دقيقة'});
@@ -195,11 +198,33 @@ export function registerOperations(app: Express, notify?: (payload:any)=>Promise
     res.setHeader('Set-Cookie',`ain_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${process.env.NODE_ENV==='production'?'; Secure':''}`);
     res.json({user:seed.initialUsers.find(x=>x.id===account.id)});
   });
-  app.get('/api/auth/me',(req,res)=>{const user=userFor(req);return user?res.json({user}):res.status(401).json({error:'يلزم تسجيل الدخول'});});
-  app.post('/api/auth/logout',(req,res)=>{app.locals.onLogout?.(userFor(req)?.id);const token=req.headers.cookie?.match(/ain_session=([^;]+)/)?.[1];if(token)sessions.delete(token);res.setHeader('Set-Cookie','ain_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');res.json({success:true});});
-  app.use('/api',(req,res,next)=>{if(req.path==='/health')return next();const actor=userFor(req);if(!actor)return res.status(401).json({error:'يلزم تسجيل الدخول'});if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.origin;if(origin&&new URL(origin).host!==req.headers.host)return res.status(403).json({error:'مصدر طلب غير مسموح'});if(!req.is('application/json'))return res.status(415).json({error:'JSON مطلوب'});} (req as any).actor=actor;if(req.path.startsWith('/notifications/broadcast')&&actor.role!=='admin')return res.status(403).json({error:'البث الجماعي للإدارة فقط'});next();});
+  app.get(['/api/auth/me', '/auth/me'],(req,res)=>{const user=userFor(req);return user?res.json({user}):res.status(401).json({error:'يلزم تسجيل الدخول'});});
+  app.post(['/api/auth/logout', '/auth/logout'],(req,res)=>{app.locals.onLogout?.(userFor(req)?.id);const token=req.headers.cookie?.match(/ain_session=([^;]+)/)?.[1];if(token)sessions.delete(token);res.setHeader('Set-Cookie','ain_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');res.json({success:true});});
+  app.use((req,res,next)=>{
+    const p = req.path;
+    const isApi = p.startsWith('/api') || ['/state', '/operations', '/sync', '/reports', '/assets', '/ppm', '/notifications'].some(x => p.startsWith(x));
+    if(!isApi || p==='/health' || p==='/api/health' || p.includes('/auth/')) return next();
+    const actor=userFor(req);
+    if(!actor)return res.status(401).json({error:'يلزم تسجيل الدخول'});
+    if(!['GET','HEAD'].includes(req.method)){
+      const origin=req.headers.origin;
+      const host = (req.headers['x-forwarded-host'] || req.headers.host || '') as string;
+      if(origin && host){
+        try {
+          const originHost = new URL(origin).host;
+          if(originHost !== host && !originHost.includes(host) && !host.includes(originHost)) {
+            return res.status(403).json({error:'مصدر طلب غير مسموح'});
+          }
+        } catch(e) {}
+      }
+      if(!req.is('application/json'))return res.status(415).json({error:'JSON مطلوب'});
+    }
+    (req as any).actor=actor;
+    if(p.includes('/notifications/broadcast')&&actor.role!=='admin')return res.status(403).json({error:'البث الجماعي للإدارة فقط'});
+    next();
+  });
   const snapshot=(actor:Actor)=>{const {processed,...data}=structuredClone(state);if(!actor.allowedTabs.includes('finance')){data.invoices=[];data.contracts=[];}if(!actor.allowedTabs.includes('marketplace'))data.purchaseOrders=[];if(actor.role!=='admin'){data.auditLogs=data.auditLogs.filter(x=>x.userId===actor.id);data.compounds=[];data.housingUnits=[];data.transportRequests=[];data.serviceRequests=[];}return data;};
-  app.get('/api/state',(req,res)=>res.json(snapshot((req as any).actor)));
+  app.get(['/api/state', '/state'],(req,res)=>res.json(snapshot((req as any).actor)));
   const execute=(operation:any,actor:Actor)=>{
     check(!operation.payload?.ownerId||operation.payload.ownerId===actor.id,'العملية المحلية تخص حسابًا آخر',403);
     check(text(operation.id),'معرف العملية مطلوب');const fingerprint=JSON.stringify({type:operation.type,payload:operation.payload});const prior=state.processed[operation.id];if(prior){check(prior.actor===actor.id&&prior.fingerprint===fingerprint,'معرف عملية مكرر ببيانات مختلفة',409);return prior.result;}
@@ -207,9 +232,9 @@ export function registerOperations(app: Express, notify?: (payload:any)=>Promise
     if(notify&&['create_report','update_report_status'].includes(operation.type))void notify({title:operation.type==='create_report'?'بلاغ جديد':'تحديث أمر عمل',body:result.title,tag:result.id,data:{type:operation.type==='create_report'?'new_report':'report_status_update',reportId:result.id,recipientRoles:['admin','biomedical'],ownerId:result.createdBy,priority:result.priority},requireInteraction:result.priority==='عاجل'}).catch(()=>{});
     return result;
   };
-  app.post('/api/operations',(req,res)=>{try{const result=execute(req.body,(req as any).actor);res.json({result,state:snapshot((req as any).actor)});}catch(e:any){res.status(e.status||500).json({error:e.status?e.message:'تعذر حفظ العملية؛ لم تتغير البيانات'});}});
-  app.post('/api/sync/batch',(req,res)=>{const items=req.body.items;if(!Array.isArray(items)||items.length>100)return res.status(400).json({error:'قائمة العمليات مطلوبة وبحد أقصى 100 عملية'});const results=items.map(item=>{try{const result=execute(item,(req as any).actor);return {id:item.id,success:true,result};}catch(e:any){return {id:item.id,success:false,error:e.message};}});res.json({results,state:snapshot((req as any).actor)});});
-  app.get('/api/reports',(_,res)=>res.json(state.reports));app.get('/api/assets',(_,res)=>res.json(state.assets));app.get('/api/ppm',(_,res)=>res.json({schedules:state.ppmSchedules,calibrationLogs:state.calibrationLogs}));
+  app.post(['/api/operations', '/operations'],(req,res)=>{try{const result=execute(req.body,(req as any).actor);res.json({result,state:snapshot((req as any).actor)});}catch(e:any){res.status(e.status||500).json({error:e.status?e.message:'تعذر حفظ العملية؛ لم تتغير البيانات'});}});
+  app.post(['/api/sync/batch', '/sync/batch'],(req,res)=>{const items=req.body.items;if(!Array.isArray(items)||items.length>100)return res.status(400).json({error:'قائمة العمليات مطلوبة وبحد أقصى 100 عملية'});const results=items.map(item=>{try{const result=execute(item,(req as any).actor);return {id:item.id,success:true,result};}catch(e:any){return {id:item.id,success:false,error:e.message};}});res.json({results,state:snapshot((req as any).actor)});});
+  app.get(['/api/reports', '/reports'],(_,res)=>res.json(state.reports));app.get(['/api/assets', '/assets'],(_,res)=>res.json(state.assets));app.get(['/api/ppm', '/ppm'],(_,res)=>res.json({schedules:state.ppmSchedules,calibrationLogs:state.calibrationLogs}));
   return {getState:()=>state};
 }
 
