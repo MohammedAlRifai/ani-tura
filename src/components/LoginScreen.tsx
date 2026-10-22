@@ -11,6 +11,6 @@ export function LoginScreen({ onLogin }: { onLogin: () => Promise<void> }) {
     <label htmlFor="login-user">الحساب</label><select id="login-user" value={userId} onChange={e=>setUserId(e.target.value)}>{initialUsers.map(u=><option key={u.id} value={u.id}>{u.name} — {u.roleTitle}</option>)}</select>
     <label htmlFor="login-password">كلمة المرور</label><input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} />
     {error&&<p role="alert">{error}</p>}<button disabled={busy} type="submit">{busy?'جارٍ التحقق…':'دخول'}</button>
-    <small>لكل حساب صلاحيات مستقلة. بيانات الدخول الأولية موجودة في ملف الوصول المحلي لدى مسؤول النسخة.</small>
+    <small>لكل حساب صلاحيات مستقلة. كلمة المرور الافتراضية لجميع الحسابات هي: <strong>123456</strong></small>
   </form></main>;
 }
