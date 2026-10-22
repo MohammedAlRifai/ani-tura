@@ -1,0 +1,28 @@
+{
+  "id": "/",
+  "name": "عين المستشفى — إدارة المرافق والأجهزة الطبية",
+  "short_name": "عين المستشفى",
+  "description": "منظومة تشغيل وإدارة المستشفيات والمرافق الطبية، بلاغات الأعطال والصيانة، جرد الأجهزة الطبية، سلاسل الإمداد، وإشعارات الدفع الفورية.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0C1A18",
+  "theme_color": "#126B68",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/assets/images/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

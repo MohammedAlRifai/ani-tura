@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/* Driver.js Custom Arabic & Hospital Theme Styling */
+.driver-popover {
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
+  direction: rtl !important;
+  text-align: right !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 18px !important;
+  border: 1px solid #CDE5DF !important;
+  box-shadow: 0 20px 30px -10px rgba(18, 107, 104, 0.2), 0 10px 15px -5px rgba(0, 0, 0, 0.1) !important;
+  max-width: 360px !important;
+}
+
+.driver-popover-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #193B3A !important;
+  margin-bottom: 8px !important;
+  line-height: 1.4 !important;
+}
+
+.driver-popover-description {
+  font-size: 13px !important;
+  color: #4A635E !important;
+  line-height: 1.6 !important;
+  margin-bottom: 16px !important;
+}
+
+.driver-popover-progress-text {
+  font-size: 11px !important;
+  color: #126B68 !important;
+  font-weight: 700 !important;
+  background-color: #E9F5F2 !important;
+  padding: 3px 8px !important;
+  border-radius: 8px !important;
+}
+
+.driver-popover-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 12px !important;
+  gap: 8px !important;
+}
+
+.driver-popover-footer button {
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 6px 14px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  text-shadow: none !important;
+}
+
+.driver-popover-next-btn {
+  background-color: #126B68 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.driver-popover-next-btn:hover {
+  background-color: #0d5553 !important;
+}
+
+.driver-popover-prev-btn {
+  background-color: #F0F5F3 !important;
+  color: #556E69 !important;
+  border: 1px solid #DCE8E5 !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background-color: #E3EDE9 !important;
+  color: #193B3A !important;
+}
+
+.driver-popover-close-btn {
+  color: #8C9E9A !important;
+  font-size: 18px !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: #193B3A !important;
+}
+
+/* ==========================================================================
+   Dark Mode Eye-Care Theme for Medical Night Shifts
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+  background-color: #0C1A19 !important;
+  color: #E2ECE8 !important;
+}
+
+html.dark body {
+  background-color: #0C1A19 !important;
+  color: #E2ECE8 !important;
+}
+
+/* Dark mode card surfaces */
+html.dark .bg-white {
+  background-color: #122624 !important;
+  color: #E2ECE8 !important;
+}
+
+html.dark .bg-\[\#F6F9F8\],
+html.dark .bg-\[\#F8FCFA\],
+html.dark .bg-\[\#F9FCFB\],
+html.dark .bg-\[\#F6FAF8\],
+html.dark .bg-gray-50 {
+  background-color: #0F201E !important;
+}
+
+html.dark .bg-\[\#EEF5F3\],
+html.dark .bg-\[\#F1FAF8\],
+html.dark .bg-\[\#E9F5F2\] {
+  background-color: #183633 !important;
+}
+
+/* Dark mode borders */
+html.dark .border-\[\#E1EBE8\],
+html.dark .border-\[\#EEF3F1\],
+html.dark .border-\[\#EDF4F2\],
+html.dark .border-\[\#DCE8E5\],
+html.dark .border-\[\#CDE5DF\],
+html.dark .border-\[\#D5E6E1\],
+html.dark .border-gray-200,
+html.dark .border-gray-100 {
+  border-color: #1D3F3B !important;
+}
+
+/* Dark mode typography */
+html.dark .text-\[\#193B3A\],
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #EDF7F4 !important;
+}
+
+html.dark .text-\[\#556E69\],
+html.dark .text-\[\#667E7A\],
+html.dark .text-\[\#738884\],
+html.dark .text-\[\#6B8581\],
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #9DBBB4 !important;
+}
+
+/* Dark mode forms and inputs */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #152E2B !important;
+  color: #EDF7F4 !important;
+  border-color: #244C47 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #6C8E87 !important;
+}
+
+/* Dark mode modals and overlays */
+html.dark .modal-content,
+html.dark [role="dialog"] {
+  background-color: #122624 !important;
+  border-color: #1F423E !important;
+}
+
+/* Dark mode Driver.js popovers */
+html.dark .driver-popover {
+  background-color: #122624 !important;
+  border-color: #26504B !important;
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .driver-popover-title {
+  color: #F4C96B !important;
+}
+
+html.dark .driver-popover-description {
+  color: #CCE6E0 !important;
+}
+
+html.dark .driver-popover-progress-text {
+  background-color: #1A3835 !important;
+  color: #4ECDC4 !important;
+}
+
+html.dark .driver-popover-prev-btn {
+  background-color: #183532 !important;
+  border-color: #264E49 !important;
+  color: #CCE6E0 !important;
+}
+
+html.dark .driver-popover-prev-btn:hover {
+  background-color: #1F433F !important;
+  color: #FFFFFF !important;
+}
+
+html.dark .driver-popover-close-btn {
+  color: #83A59E !important;
+}
+
+html.dark .driver-popover-close-btn:hover {
+  color: #FFFFFF !important;
+}
+
+
+
