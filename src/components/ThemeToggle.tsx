@@ -62,28 +62,37 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   return (
     <div className="relative" ref={containerRef}>
       {/* Quick Trigger Button in Top Header */}
-      <button
-        id="tour-theme-btn"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border cursor-pointer shadow-2xs ${
-          isDark
-            ? "bg-[#163532] hover:bg-[#1C433F] text-[#F4C96B] border-[#2A5752]"
-            : "bg-white/10 hover:bg-white/20 text-[#D6E5E1] border-white/10"
-        }`}
-        title={`مظهر التطبيق: ${preference === "auto" ? "تلقائي" : preference === "dark" ? "ليلي" : "نهاري"} - ${activeReason}`}
-      >
-        {preference === "auto" ? (
-          <Clock className="w-3.5 h-3.5 text-[#F4C96B]" />
-        ) : isDark ? (
-          <Moon className="w-3.5 h-3.5 text-[#F4C96B]" />
-        ) : (
-          <Sun className="w-3.5 h-3.5 text-[#F4C96B]" />
-        )}
-        <span className="hidden sm:inline">
-          {preference === "auto" ? "تلقائي" : preference === "dark" ? "ليلي" : "نهاري"}
-        </span>
-        <ChevronDown className="w-3 h-3 text-[#A8C7BF]" />
-      </button>
+      <div className="flex items-center rounded-full overflow-hidden border border-white/20 bg-white/10 shadow-2xs">
+        <button
+          id="tour-theme-btn"
+          onClick={() => setPreference(isDark ? "light" : "dark")}
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
+            isDark
+              ? "bg-[#163532] text-[#F4C96B]"
+              : "bg-white/25 text-white"
+          }`}
+          title={`التبديل بين الفاتح والداكن (الحالي: ${isDark ? "ليلي" : "فاتح"})`}
+        >
+          {preference === "auto" ? (
+            <Clock className="w-3.5 h-3.5 text-[#F4C96B]" />
+          ) : isDark ? (
+            <Moon className="w-3.5 h-3.5 text-[#F4C96B]" />
+          ) : (
+            <Sun className="w-3.5 h-3.5 text-[#FDE047]" />
+          )}
+          <span className="text-[11px]">
+            {preference === "auto" ? "تلقائي" : isDark ? "ليلي" : "فاتح"}
+          </span>
+        </button>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="px-1.5 py-1.5 text-[#D6E5E1] hover:bg-white/20 border-r border-white/15 cursor-pointer"
+          title="خيارات إضافية للورديات والوضع التلقائي"
+          aria-label="قائمة خيارات المظهر"
+        >
+          <ChevronDown className="w-3 h-3 text-[#A8C7BF]" />
+        </button>
+      </div>
 
       {/* Dropdown Menu */}
       {isOpen && (

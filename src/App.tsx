@@ -443,10 +443,20 @@ export default function App() {
     setServiceRequests(data.serviceRequests); setSfdaAlerts(data.sfdaAlerts); setSystemConfig(data.systemConfig);
   }, []);
   const loadSession = useCallback(async () => {
-    try { const me=await fetch('/api/auth/me'); if(me.ok){const {user}=await me.json();if(user)setCurrentUser(user);}
+    try {
+      const me = await fetch('/api/auth/me').catch(() => null);
+      if (me && me.ok) {
+        const authData = await me.json();
+        if (authData.user) {
+          setCurrentUser(authData.user);
+          if (authData.user.allowedTabs) {
+            setActiveTab(tab => authData.user.allowedTabs.includes(tab) ? tab : 'dashboard');
+          }
+        }
+      }
       const res=await fetch('/api/state').catch(()=>null); if(res&&res.ok){const data=await res.json();applySnapshot(data);}
       window.dispatchEvent(new Event("ain-session-changed"));
-      setActiveTab(tab=>user.allowedTabs.includes(tab)?tab:'dashboard');
+
     } catch {setAuthenticated(true);} finally {setSessionLoading(false);}
   }, [applySnapshot]);
   useEffect(()=>{void loadSession();},[loadSession]);

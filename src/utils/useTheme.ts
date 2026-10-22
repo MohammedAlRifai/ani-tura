@@ -48,11 +48,11 @@ export function useTheme() {
   const [preference, setPreference] = useState<ThemePreference>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY) as ThemePreference;
-      if (saved === "dark" || saved === "light" || saved === "auto") {
+      if (saved === "dark" || saved === "light") {
         return saved;
       }
     }
-    return "auto";
+    return "light";
   });
 
   const [themeState, setThemeState] = useState<ThemeState>(() => {

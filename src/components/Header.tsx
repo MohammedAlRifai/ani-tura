@@ -224,7 +224,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Desktop Banner Tools */}
-        <div className="hidden sm:flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Language Switcher for Medical & Foreign Staff */}
           <LanguageToggle />
 
